@@ -1,7 +1,6 @@
 package com.example.videoplayercompose
 
 import android.app.PictureInPictureParams
-import android.app.RemoteAction
 import android.content.pm.PackageManager
 import android.graphics.RectF
 import android.os.Build
@@ -33,7 +32,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toAndroidRect
 import androidx.compose.ui.graphics.toAndroidRectF
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -50,10 +48,9 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     private val isPipSupported by lazy {
         packageManager.hasSystemFeature(
-            PackageManager.FEATURE_PICTURE_IN_PICTURE
+            PackageManager.FEATURE_PICTURE_IN_PICTURE,
         )
     }
 
@@ -63,15 +60,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            VideoPlayerComposeTheme {
+            VideoPlayerComposeTheme { // hello
                 val viewModel = hiltViewModel<MainViewModel>()
                 val videoItems by viewModel.videoItems.collectAsState()
-                val selectVideoLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.GetContent(),
-                    onResult = { uri ->
-                        uri?.let(viewModel::addVideoUri)
-                    }
-                )
+                val selectVideoLauncher =
+                    rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.GetContent(),
+                        onResult = { uri ->
+                            uri?.let(viewModel::addVideoUri)
+                        },
+                    )
                 var lifecycle by remember {
                     mutableStateOf(Lifecycle.Event.ON_CREATE)
                 }
@@ -85,9 +83,10 @@ class MainActivity : ComponentActivity() {
                 }
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
                 ) {
                     AndroidView(
                         factory = { context ->
@@ -107,12 +106,13 @@ class MainActivity : ComponentActivity() {
 //                                     else -> Unit
 //                                 }
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16 / 9f)
-                            .onGloballyPositioned {
-                                videoViewBounds = it.boundsInWindow().toAndroidRectF()
-                            }
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(16 / 9f)
+                                .onGloballyPositioned {
+                                    videoViewBounds = it.boundsInWindow().toAndroidRectF()
+                                },
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     IconButton(onClick = {
@@ -120,22 +120,23 @@ class MainActivity : ComponentActivity() {
                     }) {
                         Icon(
                             imageVector = Icons.Default.FileOpen,
-                            contentDescription = "Select video"
+                            contentDescription = "Select video",
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
                         items(videoItems) { item ->
                             Text(
                                 text = item.name,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.playVideo(item.contentUri)
-                                    }
-                                    .padding(16.dp)
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.playVideo(item.contentUri)
+                                        }
+                                        .padding(16.dp),
                             )
                         }
                     }
@@ -165,15 +166,17 @@ class MainActivity : ComponentActivity() {
 //                                PendingIntent.FLAG_IMMUTABLE
 //                            )
 //                        )
-                    )
+                    ),
                 )
                 .build()
-        } else null
+        } else {
+            null
+        }
     }
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if(!isPipSupported) {
+        if (!isPipSupported) {
             return
         }
         updatedPipParams()?.let { params ->

@@ -20,23 +20,24 @@ class MetaDataReaderImpl(
             return null
         }
 
-        val fileName = app.contentResolver
-            .query(
-                contentUri,
-                arrayOf(MediaStore.Video.VideoColumns.DISPLAY_NAME),
-                null,
-                null,
-                null
-            )
-            ?.use { cursor ->
-                val index = cursor.getColumnIndex(MediaStore.Video.VideoColumns.DISPLAY_NAME)
-                cursor.moveToFirst()
-                cursor.getString(index)
-            }
+        val fileName =
+            app.contentResolver
+                .query(
+                    contentUri,
+                    arrayOf(MediaStore.Video.VideoColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null,
+                )
+                ?.use { cursor ->
+                    val index = cursor.getColumnIndex(MediaStore.Video.VideoColumns.DISPLAY_NAME)
+                    cursor.moveToFirst()
+                    cursor.getString(index)
+                }
 
         return fileName?.let { fullFilename ->
             MetaData(
-                fileName = Uri.parse(fullFilename).lastPathSegment ?: return null
+                fileName = Uri.parse(fullFilename).lastPathSegment ?: return null,
             )
         }
     }

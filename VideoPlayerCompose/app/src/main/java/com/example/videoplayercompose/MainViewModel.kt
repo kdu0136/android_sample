@@ -13,41 +13,44 @@ import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(
-    private val savedStateHandle: SavedStateHandle,
-    val player: Player,
-    private val metaDataReader: MetaDataReader,
-): ViewModel() {
-    private val videoUris = savedStateHandle.getStateFlow("videoUris", emptyList<Uri>())
+class MainViewModel
+    @Inject
+    constructor(
+        private val savedStateHandle: SavedStateHandle,
+        val player: Player,
+        private val metaDataReader: MetaDataReader,
+    ) : ViewModel() {
+        private val videoUris = savedStateHandle.getStateFlow("videoUris", emptyList<Uri>())
 
-    val videoItems = videoUris.map { uris ->
-        uris.map { uri ->
-            VideoItem(
-                contentUri = uri,
-                medeaItem = MediaItem.fromUri(uri),
-                name = metaDataReader.getMetaDataFromUri(uri)?.fileName ?: "No name"
+        val videoItems =
+            videoUris.map { uris ->
+                uris.map { uri ->
+                    VideoItem(
+                        contentUri = uri,
+                        medeaItem = MediaItem.fromUri(uri),
+                        name = metaDataReader.getMetaDataFromUri(uri)?.fileName ?: "No name",
+                    )
+                }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        init {
+            player.prepare()
+        }
+
+        fun addVideoUri(uri: Uri) {
+            val currentUris = videoUris.value
+            savedStateHandle["videoUris"] = currentUris + uri
+            player.addMediaItem(MediaItem.fromUri(uri))
+        }
+
+        fun playVideo(uri: Uri) {
+            player.setMediaItem(
+                videoItems.value.find { it.contentUri == uri }?.medeaItem ?: return,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init {
-        player.prepare()
+        override fun onCleared() {
+            super.onCleared()
+            player.release()
+        }
     }
-
-    fun addVideoUri(uri: Uri) {
-        val currentUris = videoUris.value
-        savedStateHandle["videoUris"] = currentUris + uri
-        player.addMediaItem(MediaItem.fromUri(uri))
-    }
-
-    fun playVideo(uri: Uri) {
-        player.setMediaItem(
-            videoItems.value.find { it.contentUri == uri }?.medeaItem ?: return
-        )
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        player.release()
-    }
-}

@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.utils.`is`
+import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
     id(libs.plugins.android.application.get().pluginId)
@@ -6,6 +6,7 @@ plugins {
     id(libs.plugins.kotlin.kapt.get().pluginId)
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     id(libs.plugins.com.google.dagger.hilt.android.get().pluginId)
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -30,7 +31,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -51,6 +52,24 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+tasks.getByPath("preBuild").dependsOn("ktlintFormat")
+
+ktlint {
+    android = true
+    ignoreFailures = false
+    additionalEditorconfig =
+        mapOf(
+            "ktlint_standard_final-newline" to "disabled",
+            "ktlint_standard_no-wildcard-imports" to "disabled",
+            "ktlint_standard_function-naming" to "disabled",
+        )
+    reporters {
+        reporter(ReporterType.PLAIN)
+        reporter(ReporterType.CHECKSTYLE)
+        reporter(ReporterType.SARIF)
     }
 }
 
