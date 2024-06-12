@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "VideoPlayerCompose"
 include(":app")
- 
+include(":benchmark")
