@@ -1,11 +1,13 @@
 package com.example.camerax
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,11 +15,16 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture.OnImageCapturedCallback
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
+import androidx.camera.video.FileOutputOptions
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
+import androidx.camera.view.video.AudioConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -44,9 +51,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.camerax.ui.theme.CameraXTheme
 import kotlinx.coroutines.launch
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
+    private var recording: Recording? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (!hasRequiredPermissions()) {
@@ -88,13 +98,15 @@ class MainActivity : ComponentActivity() {
                             .padding(paddingValues),
                     ) {
                         CameraPreview(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .aspectRatio(3 / 4f),
                             controller = controller,
                         )
 
                         IconButton(
                             modifier = Modifier
-                                .offset(16.dp, 16.dp),
+                                .offset(16.dp, 32.dp),
                             onClick = {
                                 controller.cameraSelector =
                                     if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) CameraSelector.DEFAULT_FRONT_CAMERA
@@ -111,7 +123,7 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp, vertical = 32.dp),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
                             IconButton(
@@ -137,7 +149,9 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             IconButton(
-                                onClick = { /*TODO*/ },
+                                onClick = {
+                                    recordVideo(controller)
+                                },
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Videocam,
@@ -155,6 +169,10 @@ class MainActivity : ComponentActivity() {
         controller: LifecycleCameraController,
         onPhotoTaken: (Bitmap) -> Unit
     ) {
+        if (!hasRequiredPermissions()) {
+            return
+        }
+
         controller.takePicture(
             ContextCompat.getMainExecutor(applicationContext),
             object : OnImageCapturedCallback() {
@@ -185,6 +203,47 @@ class MainActivity : ComponentActivity() {
                 }
             }
         )
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun recordVideo(controller: LifecycleCameraController) {
+        if (recording != null) {
+            recording?.stop()
+            recording = null
+            return
+        }
+
+        if (!hasRequiredPermissions()) {
+            return
+        }
+
+        val outputFile = File(filesDir, "sample-video.mp4")
+        recording = controller.startRecording(
+            FileOutputOptions.Builder(outputFile).build(),
+            AudioConfig.create(true),
+            ContextCompat.getMainExecutor(applicationContext),
+        ) { event ->
+            when (event) {
+                is VideoRecordEvent.Finalize -> {
+                    if (event.hasError()) {
+                        recording?.close()
+                        recording = null
+
+                        Toast.makeText(
+                            applicationContext,
+                            "Video capture failed",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
+                        Toast.makeText(
+                            applicationContext,
+                            "Video capture succeeded",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun hasRequiredPermissions(): Boolean {

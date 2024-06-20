@@ -17,6 +17,7 @@ fun CameraPreview(
         modifier = modifier,
         factory = { context ->
             PreviewView(context).apply {
+                this.scaleType = PreviewView.ScaleType.FIT_CENTER
                 this.controller = controller
                 controller.bindToLifecycle(lifecycleOwner)
             }
