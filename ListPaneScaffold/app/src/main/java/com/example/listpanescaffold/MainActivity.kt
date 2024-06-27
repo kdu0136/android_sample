@@ -14,19 +14,34 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.layout.AnimatedPane
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.example.listpanescaffold.ui.theme.ListPaneScaffoldTheme
 
 class MainActivity : ComponentActivity() {
@@ -36,11 +51,60 @@ class MainActivity : ComponentActivity() {
         setContent {
             ListPaneScaffoldTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ListDetailLayout(modifier = Modifier.padding(innerPadding))
+                    var selectedItemIndex by remember {
+                        mutableIntStateOf(0)
+                    }
+                    val windowWidthClass = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+                    NavigationSuiteScaffold(
+                        modifier = Modifier.padding(innerPadding),
+                        navigationSuiteItems = {
+                            Screen.entries.forEachIndexed { index, screen ->
+                                item(
+                                    selected = index == selectedItemIndex,
+                                    onClick = {
+                                        selectedItemIndex = index
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = screen.icon,
+                                            contentDescription = screen.title
+                                        )
+                                    },
+                                    label = {
+                                        Text(text = screen.title)
+                                    }
+                                )
+                            }
+                        },
+                        layoutType = if(windowWidthClass == WindowWidthSizeClass.EXPANDED) {
+                            NavigationSuiteType.NavigationDrawer
+                        } else {
+                            NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
+                                currentWindowAdaptiveInfo()
+                            )
+                        }
+                    ) {
+                        if (selectedItemIndex == 0) {
+                            ListDetailLayout(modifier = Modifier.fillMaxSize())
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = Screen.entries[selectedItemIndex].title)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+enum class Screen(val title: String, val icon: ImageVector) {
+    HOME("Home", Icons.Default.Home),
+    SEARCH("Search", Icons.Default.Search),
+    SETTINGS("Settings", Icons.Default.Settings),
 }
 
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
